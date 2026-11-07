@@ -1,0 +1,12 @@
+# MATLAB autosave and backup files
+*.asv
+*.m~
+*.autosave
+
+# Compiled MEX files
+*.mex*
+
+# Simulink cache and generated code
+slprj/
+*.slxc
+*_grt_rtw/
