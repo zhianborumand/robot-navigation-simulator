@@ -4,7 +4,7 @@ A 2D MATLAB simulation of an autonomous two-wheeled robot that navigates between
 
 **Goal:** design a robot that can autonomously complete a course while coping with imperfect motors and sensors.
 
-**Team:** [Name 1], [Name 2], [Name 3]
+**Team:** Zhian Borumand, Rubaiyat Mashrafi, Clive Fernandes
 
 **Demo video:** [link to YouTube / Google Drive]
 
