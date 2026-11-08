@@ -8,12 +8,10 @@ T = 3;
 time = 0:dt:T;
 
 %% motor settings
-
 tau = 0.80;          % motor time constant (s)
 maxSpeed = 0.40;     % maximum wheel speed (m/s)
 
 %% create arrays
-
 duty = zeros(size(time));
 targetSpeed = zeros(size(time));
 wheelSpeed = zeros(size(time));
@@ -21,7 +19,6 @@ wheelSpeed = zeros(size(time));
 %% set pwm duty cycle
 
 for k = 1:length(time)
-
     if time(k) < 1
         duty(k) = 0.25;
     elseif time(k) < 2
@@ -31,27 +28,20 @@ for k = 1:length(time)
     end
 
     targetSpeed(k) = duty(k)*maxSpeed;
-
 end
 
 %% simulate motor response
 
 for k = 2:length(time)
-
     speedError = targetSpeed(k-1) - wheelSpeed(k-1);
-
     speedChange = (dt/tau)*speedError;
-
     wheelSpeed(k) = wheelSpeed(k-1) + speedChange;
-
 end
 
 %% plot results
 
 figure('Color','w','Position',[100 100 900 650]);
-
 subplot(2,1,1);
-
 plot(time,wheelSpeed,'b','LineWidth',2);
 hold on;
 plot(time,targetSpeed,'r--','LineWidth',1.5);
@@ -63,7 +53,6 @@ legend('actual speed','requested speed');
 title('motor speed response');
 
 subplot(2,1,2);
-
 plot(time,duty*100,'k','LineWidth',2);
 
 grid on;
