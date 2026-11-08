@@ -1,159 +1,209 @@
-# Autonomous Differential-Drive Robot (MATLAB)
 
-A 2D MATLAB simulation of an autonomous two-wheeled robot that navigates between waypoints. The robot uses simulated DC motors with realistic response delays, PWM voltage control, PI speed controllers, wheel encoders and sensor noise.
+# Autonomous Differential-Drive Robot Simulator
 
-**Goal:** design a robot that can autonomously complete a course while coping with imperfect motors and sensors.
+**A MATLAB project exploring autonomous navigation, motor dynamics and feedback control.**
 
-**Team:** Zhian Borumand, Rubaiyat Mashrafi, Clive Fernandes
+This project involves developing a 2D simulation of a differential-drive robot capable of navigating to specified destinations. The aim is to investigate how motor characteristics, control algorithms and sensor measurements affect the robot's movement and accuracy.
 
-**Demo video:** [link to YouTube / Google Drive]
+The simulator is being developed in stages, starting with basic robot movement before introducing motor control, waypoint navigation and more realistic operating conditions.
 
----
-
-## Results
-
-> Add plots here as you produce them (save them in `results/`).
-
-| Scenario | Completion time (s) | RMS path error (m) | Final position error (m) |
-|---|---|---|---|
-| Ideal motors | | | |
-| Unequal motors, no PI | | | |
-| Unequal motors, with PI | | | |
-| Noisy encoders, with PI | | | |
-
-![Robot path comparison](results/path_comparison.png)
-![Motor step response](results/motor_step_response.png)
+**Developers:** Zhian Borumand, Rubaiyat Mashrafi, Clive Fernandes  
+**Software:** MATLAB R2022b (base MATLAB)  
+**Status:** In development, Days 1–2 completed
 
 ---
 
-## Features
+## 1. Project Objectives
 
-- [x] Differential-drive kinematics and animated 2D robot
-- [ ] First-order DC motor model with response delay
-- [ ] PWM duty-cycle control with voltage saturation
-- [ ] Unequal motor efficiencies
-- [ ] PI speed controllers with anti-windup
-- [ ] Waypoint navigation (heading and position control)
-- [ ] Wheel encoder model (quantisation and noise)
-- [ ] Performance comparison and dashboard
+- Model a differential-drive robot using MATLAB.
+- Simulate DC motor acceleration and PWM speed control.
+- Investigate the effects of unequal motor characteristics.
+- Implement PI controllers to regulate wheel velocities.
+- Develop autonomous navigation between multiple waypoints.
+- Introduce simulated wheel encoders and measurement noise.
+- Evaluate navigation accuracy and controller performance.
 
----
+## 2. Development Progress
 
-## Requirements
+### Day 1: Robot Movement and Autonomous Navigation
 
-- MATLAB (version: [your version])
-- No toolboxes required (base MATLAB only)
+**Status: Completed**
 
----
+We developed a 2D simulation using differential-drive kinematics. The initial experiments tested straight-line and circular movement by adjusting the velocities of the two wheels.
 
-## How to run
+We then implemented a proportional heading controller, allowing the robot to navigate autonomously towards a target at `(2,2)` metres.
+
+Three heading controller gains were tested:
+
+| Heading gain | Observed behaviour |
+|---|---|
+| K = 0.5 | Wider curved trajectory |
+| K = 2.0 | Faster heading correction |
+| K = 5.0 | Sharper turning and a more direct approach |
+
+All three configurations reached the target within the specified 10 cm tolerance.
+
+### Day 2: DC Motor Modelling and PWM Control
+
+**Status: Completed**
+
+The initial simulation assumed that both motors could change speed instantly. We introduced a simplified first-order motor model to simulate acceleration and deceleration.
+
+Our experiments covered:
+
+- Motor response times using time constants of 0.3 s and 0.8 s.
+- PWM duty-cycle changes and their effects on wheel speed.
+- Differences between two motors receiving identical commands.
+- Comparison of equal and unequal motor characteristics.
+
+The results demonstrated that motors with different response times can produce different wheel velocities during acceleration, even when receiving identical PWM commands.
+
+## 3. How It Works
+
+### Differential-Drive Kinematics
+
+The robot uses two independently driven wheels. Its forward and angular velocities are calculated using:
+
+$$
+v = \frac{v_R + v_L}{2}
+$$
+
+$$
+\omega = \frac{v_R - v_L}{L}
+$$
+
+Where:
+- `vR` = Right wheel velocity (m/s)
+- `vL` = Left wheel velocity (m/s)
+- `L` = Distance between wheels (m)
+- `v` = Robot forward velocity (m/s)
+- `omega` = Angular velocity (rad/s)
+
+These velocities are used to update the robot's position and heading during each simulation step.
+
+### DC Motor Model
+
+Each motor is represented using a first-order response:
+
+$$
+\frac{dv}{dt} = \frac{v_{\text{target}}-v}{\tau}
+$$
+
+Where `tau` is the motor time constant, determining how quickly the motor responds to a speed command.
+
+### PWM Control
+
+PWM is approximated using:
+
+$$
+v_{\text{target}} = D v_{\max}
+$$
+
+Where:
+- `D` = PWM duty cycle (0 to 1)
+- `vMax` = Assumed maximum wheel speed (m/s)
+
+The current model is simplified and does not simulate the complete electrical characteristics of a DC motor.
+
+### Autonomous Navigation
+
+The robot calculates its distance and heading relative to a target position.
+
+A proportional controller adjusts the wheel velocities to reduce heading error, while forward speed decreases as the robot approaches the destination.
+
+The robot stops when it enters the specified target tolerance.
+
+## 4. Project Structure
+
+```text
+robot-navigation-simulator/
+|
+|-- day_1/
+|   |-- robot_straight.m
+|   |-- robot_circle.m
+|   |-- robot_autonomous.m
+|
+|-- day_2/
+|   |-- motor_test.m
+|   |-- motor_pwm_test.m
+|   |-- two_motor_test.m
+|
+|-- README.md
+```
+
+Each script represents a separate experiment and can be executed independently.
+
+## 5. How to Run
+
+**Requirements:** MATLAB R2022b or a compatible version. No additional toolboxes required.
 
 1. Clone the repository:
-   ```
-   git clone [repository URL]
-   ```
-2. Open MATLAB and set the repository folder as the Current Folder.
-3. Add the source folder to the path:
-   ```matlab
-   addpath('src');
-   ```
-4. Run the main simulation:
-   ```matlab
-   run('main/runSimulation.m')
-   ```
 
----
-
-## Project structure
-
-```
-robot-sim/
-├── README.md
-├── .gitignore
-├── main/
-│   └── runSimulation.m        % ties everything together
-├── src/
-│   ├── navController.m        % waypoint / heading controller
-│   ├── robotKinematics.m      % differential-drive kinematics
-│   ├── motorModel.m           % DC motor dynamics
-│   ├── piController.m         % PI speed controller
-│   └── encoderModel.m         % encoder quantisation and noise
-├── tests/
-│   ├── test_motorStepResponse.m
-│   └── test_piTuning.m
-├── results/                   % saved plots
-└── docs/
-    └── notes.md
+```bash
+git clone https://github.com/zhianborumand/robot-navigation-simulator.git
 ```
 
----
+2. Open MATLAB and set the repository directory as the current folder.
 
-## How it works
+3. Run the desired simulation.
 
-### 1. Kinematics
-The robot is modelled as a unicycle. Left and right wheel speeds are converted to forward speed `v` and turn rate `omega`, then integrated to update `x`, `y` and `theta`.
+For autonomous navigation:
 
-### 2. Motor model
-Each motor is modelled as a first-order system:
-
-```
-tau * d(omega)/dt = K*V - omega
+```matlab
+run('day_1/robot_autonomous.m')
 ```
 
-where `tau` is the time constant, `K` is the steady-state gain and `V` is the applied voltage.
+For the two-motor comparison:
 
-### 3. PWM and voltage limits
-The controller outputs a duty cycle between -1 and 1. The average motor voltage is `V = duty * Vsupply`.
+```matlab
+run('day_2/two_motor_test.m')
+```
 
-### 4. Speed control
-A PI controller on each wheel compares the reference speed with the measured speed and adjusts the duty cycle, with anti-windup when the output saturates.
+Parameters such as wheel speed, motor time constant and controller gains can be changed directly within the scripts.
 
-### 5. Navigation
-A proportional controller turns the robot towards the next waypoint and drives forward at a speed that falls as it gets closer.
+## 6. Development Roadmap
 
-### 6. Sensors
-Wheel encoders are simulated with discrete ticks and measurement noise, and position is estimated by dead reckoning.
+| Stage | Work | Status |
+|---|---|---|
+| Day 1 | Robot kinematics and autonomous navigation | Completed |
+| Day 2 | Motor dynamics and PWM control | Completed |
+| Day 3 | Motor integration and PI speed control | Planned |
+| Days 4–5 | Waypoint navigation and encoder modelling | Planned |
+| Days 6–7 | Performance testing and visual improvements | Planned |
 
----
+### Planned Performance Tests
 
-## Parameters
+Once the complete simulation is integrated, we intend to compare:
 
-| Parameter | Symbol | Value | Unit |
-|---|---|---|---|
-| Wheel base | `L` | 0.20 | m |
-| Wheel radius | `R` | 0.033 | m |
-| Motor time constant | `tau` | 0.1 | s |
-| Motor gain | `K` | 3.3 | rad/s per V |
-| Supply voltage | `Vsupply` | 6 | V |
-| Waypoint tolerance | `tolerance` | 0.10 | m |
+| Scenario | Investigation |
+|---|---|
+| Ideal motors | Baseline navigation performance |
+| Unequal motors | Effects of motor mismatch |
+| PI-controlled motors | Improvements from speed feedback |
+| Noisy wheel encoders | Effects of measurement uncertainty |
 
----
+Performance will be evaluated using completion time, final position error and trajectory-tracking accuracy.
 
-## Team workflow
+## 7. Collaboration
 
-- `main` always contains code that runs.
-- Each task is developed on its own branch (e.g. `day2-motor-model`) and merged through a pull request.
-- Commit messages are short and in the present tense (e.g. `Add first-order DC motor model`).
-- Pull before starting work and before pushing.
+Development is coordinated through GitHub.
 
----
+The `main` branch is intended to contain working versions of the project. Individual features can be developed on separate branches and reviewed through pull requests before merging.
 
-## Lessons learned
+## 8. Future Work
 
-> Fill this in at the end: what worked, what did not, what you would do differently.
+Potential extensions include:
 
----
-
-## Future work
-
-- Extended Kalman filter fusing encoders with a noisy gyro
-- Comparison of PI, PID and feedforward control
-- Obstacle avoidance
+- Trajectory optimisation.
+- Obstacle avoidance.
+- Sensor fusion.
+- Comparison of PI, PID and feedforward control.
+- More detailed DC motor electrical modelling.
 
 ---
 
 ## Authors
 
-- [Name 1] ([GitHub profile link])
-- [Name 2] ([GitHub profile link])
-- [Name 3] ([GitHub profile link])
+- Zhian Borumand
+- Rubaiyat Mashrafi
+- Clive Fernandes
