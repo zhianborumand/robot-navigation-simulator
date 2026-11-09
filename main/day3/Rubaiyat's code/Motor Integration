@@ -1,0 +1,88 @@
+dt = 0.02;          
+T = 5;             
+time = 0:dt:T;
+L = 0.20;           
+
+%% motor settings
+tauL = 0.30;         % left motor time constant (s)
+tauR = 0.80;         % right motor time constant (s)
+maxSpeed = 0.40;     % maximum wheel speed (m/s)
+duty = 0.75;         % pwm duty cycle
+targetSpeed = duty*maxSpeed;
+speedL = zeros(size(time));
+speedR = zeros(size(time));
+
+%% robot starting position
+x = 0;
+y = 0;
+theta = 0;
+
+%% create figure
+figure('Color','w','Position',[100 100 1100 600]);
+axes('Position',[0.08 0.14 0.54 0.76]);
+axis equal;
+axis([-0.25 1.7 -1.2 0.5]);
+grid on;
+hold on;
+xlabel('x position (m)');
+ylabel('y position (m)');
+title(sprintf('robot trajectory | tauL = %.2f s | tauR = %.2f s',tauL,tauR));
+
+% reference straight path
+plot([0 targetSpeed*T],[0 0],'k--','LineWidth',1.5);
+
+% robot position
+robot = plot(x,y,'bo','MarkerSize',12,'MarkerFaceColor','b');
+
+% robot heading
+heading = quiver(x,y,0.20*cos(theta),0.20*sin(theta),0,'r','LineWidth',2);
+
+% robot trajectory
+trail = animatedline('Color','b','LineWidth',2);
+addpoints(trail,x,y);
+
+%% simulation loop
+for k = 2:length(time)
+
+    errorL = targetSpeed - speedL(k-1);
+    speedL(k) = speedL(k-1) + (dt/tauL)*errorL;
+    
+    errorR = targetSpeed - speedR(k-1);
+    speedR(k) = speedR(k-1) + (dt/tauR)*errorR;
+
+    v = (speedR(k) + speedL(k))/2;
+    omega = (speedR(k) - speedL(k))/L;
+
+    x = x + v*cos(theta)*dt;
+    y = y + v*sin(theta)*dt;
+    theta = theta + omega*dt;
+
+    set(robot,'XData',x,'YData',y);
+    set(heading,'XData',x,'YData',y,'UData',0.20*cos(theta),'VData',0.20*sin(theta));
+    addpoints(trail,x,y);
+    drawnow;
+end
+
+%% wheel speed graph
+axes('Position',[0.70 0.53 0.26 0.30]);
+plot(time,speedL,'b','LineWidth',2);
+hold on;
+plot(time,speedR,'r','LineWidth',2);
+yline(targetSpeed,'k--');
+grid on;
+xlabel('time (s)');
+ylabel('speed (m/s)');
+title('motor response');
+legend('left','right','target','Location','southeast');
+
+%% results panel
+finalHeading = theta*180/pi;
+resultsBox = annotation('textbox',[0.70 0.15 0.27 0.27],'FontSize',11,'BackgroundColor',[0.96 0.96 0.96]);
+set(resultsBox,'String',{'status: simulation complete'
+    sprintf('left tau: %.2f s',tauL)
+    sprintf('right tau: %.2f s',tauR)
+    sprintf('final position: (%.2f, %.2f) m',x,y)
+    sprintf('final heading: %.2f deg',finalHeading)
+    sprintf('lateral drift: %.3f m',abs(y))
+});
+drawnow;
