@@ -1,0 +1,143 @@
+clear;
+clc;
+close all;
+
+%% parameters
+dt = 0.02;
+T = 5; % time (s)
+time = 0:dt:T;
+L = 0.20; % distance (m)
+
+%% motor settings
+tauL = 0.30;
+tauR = 0.80;
+maxSpeed = 0.40;
+duty = 0.75;
+targetSpeed = duty*maxSpeed;
+
+%% pi controller settings
+usePI = false;
+Kp = 3;
+Ki = 6;
+integralL = 0;
+integralR = 0;
+integralLimit = 0.15;
+
+%% create arrays
+speedL = zeros(size(time));
+speedR = zeros(size(time));
+dutyL = zeros(size(time));
+dutyR = zeros(size(time));
+
+%% robot starting position
+x = 0;
+y = 0;
+theta = 0;
+
+%% create figure
+figure('Color','w','Position',[100 100 1150 650]);
+axes('Position',[0.07 0.13 0.55 0.78]);
+hold on;
+grid on;
+axis equal;
+axis([-0.25 1.7 -1.2 0.5]);
+xlabel('x position (m)');
+ylabel('y position (m)');
+
+if usePI
+    title('robot trajectory with pi control');
+else
+    title('robot trajectory without pi control');
+end
+
+plot([0 targetSpeed*T],[0 0],'k--','LineWidth',1.5);
+robot = plot(x,y,'bo','MarkerSize',12,'MarkerFaceColor','b');
+heading = quiver(x,y,0.20*cos(theta),0.20*sin(theta),0,'r','LineWidth',2);
+trail = animatedline('Color','b','LineWidth',2);
+addpoints(trail,x,y);
+
+%% simulation loop
+for k = 2:length(time)
+    errorL = targetSpeed - speedL(k-1); % calculate motor speed errors
+    errorR = targetSpeed - speedR(k-1);
+
+    if usePI
+        integralL = integralL + errorL*dt;
+        integralR = integralR + errorR*dt;
+
+        integralL = max(-integralLimit,min(integralLimit,integralL));
+        integralR = max(-integralLimit,min(integralLimit,integralR));
+
+        pwmL = Kp*errorL + Ki*integralL;
+        pwmR = Kp*errorR + Ki*integralR;
+
+    else
+        pwmL = duty;
+        pwmR = duty;
+    end
+
+    pwmL = max(0,min(1,pwmL));
+    pwmR = max(0,min(1,pwmR));
+
+    dutyL(k) = pwmL;
+    dutyR(k) = pwmR;
+
+    targetL = pwmL*maxSpeed;
+    targetR = pwmR*maxSpeed;
+
+    speedL(k) = speedL(k-1) + (dt/tauL)*(targetL-speedL(k-1));
+    speedR(k) = speedR(k-1) + (dt/tauR)*(targetR-speedR(k-1));
+
+    v = (speedR(k) + speedL(k))/2;
+    omega = (speedR(k) - speedL(k))/L;
+
+    x = x + v*cos(theta)*dt;
+    y = y + v*sin(theta)*dt;
+    theta = theta + omega*dt;
+
+    set(robot,'XData',x,'YData',y);
+    set(heading,'XData',x,'YData',y,'UData',0.20*cos(theta),'VData',0.20*sin(theta));
+    addpoints(trail,x,y);
+    drawnow;
+end
+%% motor speed graph
+axes('Position',[0.70 0.65 0.27 0.23]);
+plot(time,speedL,'b','LineWidth',2);
+hold on;
+plot(time,speedR,'r','LineWidth',2);
+yline(targetSpeed,'k--');
+grid on;
+xlabel('time (s)');
+ylabel('speed (m/s)');
+title('motor speeds');
+legend('left','right','target','Location','southeast');
+
+%% pwm graph
+axes('Position',[0.70 0.34 0.27 0.22]);
+plot(time,dutyL*100,'b','LineWidth',2);
+hold on;
+plot(time,dutyR*100,'r','LineWidth',2);
+grid on;
+xlabel('time (s)');
+ylabel('pwm (%)');
+title('motor pwm commands');
+ylim([0 110]);
+
+%% results panel
+finalHeading = theta*180/pi;
+lateralDrift = abs(y);
+resultsBox = annotation('textbox',[0.70 0.07 0.27 0.18],'FontSize',10,'BackgroundColor',[0.96 0.96 0.96]);
+
+if usePI
+    statusText = 'pi control enabled';
+else
+    statusText = 'pi control disabled';
+end
+
+set(resultsBox,'String',{
+    ['status: ' statusText]
+    sprintf('final position: (%.2f, %.2f) m',x,y)
+    sprintf('final heading: %.2f deg',finalHeading)
+    sprintf('lateral drift: %.3f m',lateralDrift)
+});
+drawnow;
