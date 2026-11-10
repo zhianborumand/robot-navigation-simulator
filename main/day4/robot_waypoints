@@ -1,0 +1,132 @@
+
+clear;
+clc;
+close all;
+
+dt = 0.05;
+T = 80;
+L = 0.20;
+
+%% robot starting position
+x = 0;
+y = 0;
+theta = 0;
+
+%% waypoints
+waypoints = [
+    2 0;
+    2 2;
+    0 2;
+    0 0
+];
+
+currentTarget = 1;
+tolerance = 0.10;
+
+%% controller settings
+Kv = 0.8;
+Ktheta = 2.0;
+vMax = 0.35;
+wheelMax = 0.40;
+
+%% create figure
+figure('Color','w','Position',[100 100 1100 600]);
+axes('Position',[0.08 0.12 0.58 0.78]);
+hold on;
+grid on;
+axis equal;
+axis([-0.5 2.5 -0.5 2.5]);
+
+xlabel('x position (m)');
+ylabel('y position (m)');
+title('autonomous waypoint navigation');
+
+plot([0;waypoints(:,1)],[0;waypoints(:,2)],'k--','LineWidth',1);
+plot(waypoints(:,1),waypoints(:,2),'rx','MarkerSize',12,'LineWidth',2);
+
+for j = 1:size(waypoints,1)
+    text(waypoints(j,1)+0.1,waypoints(j,2)+0.1,num2str(j));
+end
+
+robot = plot(x,y,'bo','MarkerSize',12,'MarkerFaceColor','b');
+heading = quiver(x,y,0.2*cos(theta),0.2*sin(theta),0,'r','LineWidth',2);
+trail = animatedline('Color','b','LineWidth',2);
+addpoints(trail,x,y);
+
+resultsBox = annotation('textbox',[0.70 0.35 0.27 0.35],'String','status: navigating','FontSize',11,'BackgroundColor',[0.96 0.96 0.96]);
+
+%% simulation loop
+elapsedTime = 0;
+
+for k = 1:round(T/dt)
+
+    dx = waypoints(currentTarget,1) - x;
+    dy = waypoints(currentTarget,2) - y;
+    distance = sqrt(dx^2 + dy^2);
+
+    if distance <= tolerance
+        currentTarget = currentTarget + 1;
+
+        if currentTarget > size(waypoints,1)
+            break;
+        end
+
+        dx = waypoints(currentTarget,1) - x;
+        dy = waypoints(currentTarget,2) - y;
+        distance = sqrt(dx^2 + dy^2);
+    end
+
+    desiredHeading = atan2(dy,dx);
+    headingError = desiredHeading - theta;
+    headingError = atan2(sin(headingError),cos(headingError));
+
+    omegaCmd = Ktheta*headingError;
+    vCmd = min(vMax,Kv*distance);
+    vCmd = vCmd*max(0,cos(headingError));
+
+    vR = vCmd + omegaCmd*L/2;
+    vL = vCmd - omegaCmd*L/2;
+
+    maxSpeed = max(abs(vL),abs(vR));
+
+    if maxSpeed > wheelMax
+        vL = vL*wheelMax/maxSpeed;
+        vR = vR*wheelMax/maxSpeed;
+    end
+
+    v = (vR + vL)/2;
+    omega = (vR - vL)/L;
+
+    x = x + v*cos(theta)*dt;
+    y = y + v*sin(theta)*dt;
+    theta = theta + omega*dt;
+
+    elapsedTime = k*dt;
+
+    set(robot,'XData',x,'YData',y);
+    set(heading,'XData',x,'YData',y,'UData',0.2*cos(theta),'VData',0.2*sin(theta));
+
+    addpoints(trail,x,y);
+    drawnow;
+end
+
+%% final results
+completed = min(currentTarget-1,size(waypoints,1));
+finalError = sqrt((waypoints(end,1)-x)^2 + (waypoints(end,2)-y)^2);
+
+if completed == size(waypoints,1)
+    statusText = 'course completed';
+else
+    statusText = 'course incomplete';
+end
+
+set(resultsBox,'String',{
+    ['status: ' statusText]
+    ' '
+    sprintf('waypoints reached: %d / %d',completed,size(waypoints,1))
+    sprintf('final position: (%.2f, %.2f) m',x,y)
+    sprintf('distance to finish: %.3f m',finalError)
+    sprintf('simulation time: %.2f s',elapsedTime)
+});
+
+drawnow;
