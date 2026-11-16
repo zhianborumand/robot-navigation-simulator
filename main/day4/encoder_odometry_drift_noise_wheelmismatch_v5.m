@@ -15,7 +15,7 @@ wheelBase = 0.20;           % distance between the wheels (m)
 ticksPerRev = 360;          % encoder ticks per wheel revolution
 distancePerTickAssumed = 2*pi*wheelRadiusAssumed / ticksPerRev;
 distancePerTickLeftActual = 2*pi*wheelRadiusLeftActual / ticksPerRev;
-distanceperTickRightActual = 2*pi*wheelRadiusRightActual / ticksPerRev;
+distancePerTickRightActual = 2*pi*wheelRadiusRightActual / ticksPerRev;
 
 
 %% true wheel speeds
@@ -38,7 +38,7 @@ for k = 2:length(time)
 
     % ticks a perfect encoder would count this step
     idealTicksLeft = floor(trueDistanceLeft(k) / distancePerTickLeftActual) - floor(trueDistanceLeft(k-1) / distancePerTickLeftActual);
-    idealTicksRight = floor(trueDistanceRight(k) / distanceperTickRightActual) - floor(trueDistanceRight(k-1) / distanceperTickRightActual);
+    idealTicksRight = floor(trueDistanceRight(k) / distancePerTickRightActual) - floor(trueDistanceRight(k-1) / distancePerTickRightActual);
 
     % add random error, keep whole numbers, can be negative
     noisyTicksLeft = idealTicksLeft + round(noiseStd * randn);
@@ -65,6 +65,9 @@ yHistory = zeros(size(time));
 xTrueHistory = zeros(size(time));
 yTrueHistory = zeros(size(time));
 
+measuredSpeedLeft = zeros(size(time));
+measuredSpeedRight = zeros(size(time));
+
 %% odometry loop
 for k = 2:length(time)
 
@@ -75,6 +78,10 @@ for k = 2:length(time)
     % convert to distances
     distanceLeft = ticksLeft * distancePerTickAssumed;
     distanceRight = ticksRight * distancePerTickAssumed;
+
+    % convert to speeds (feedback for PI controller)
+    measuredSpeedLeft(k) = distanceLeft / dt;
+    measuredSpeedRight(k) = distanceRight / dt;
 
     % motion of the robot in this step
     distanceCentre = (distanceRight + distanceLeft) / 2;
@@ -114,5 +121,39 @@ ylabel('y position (m)');
 title('path estimated from encoders');
 legend('estimated path', 'true path', 'Location', 'best');
 
+%% plot measured speed against true speed
+figure('Color','w','Position',[100 100 900 650]);       % new window to not overwrite the path plot
+
+% top panel : left wheel
+subplot(2,1,1);
+plot(time, measuredSpeedLeft, 'b', 'LineWidth', 1);
+hold on;
+yline(trueSpeedLeft, 'r--', 'LineWidth', 2);
+grid on;
+xlabel('time (s)');
+ylabel('left wheel speed (m/s)');
+title('left wheel');
+legend('measured speed', 'true speed');
+ylim([0.25 0.35]);
+
+% bottom panel : right wheel
+subplot(2,1,2);
+plot(time, measuredSpeedRight, 'b', 'LineWidth', 1);
+hold on;
+yline(trueSpeedRight, 'r--', 'LineWidth', 2);
+grid on;
+xlabel('time (s)');
+ylabel('right wheel speed (m/s)');
+title('right wheel');
+legend('measured speed', 'true speed');
+ylim([0.25 0.35]);
+
+sgtitle('measured wheel speed from encoder ticks vs true speed');
+
+%% print final errors
+finalPositionError = sqrt((xEstimate - xTrue)^2 + (yEstimate - yTrue)^2);
+finalHeadingError = headingEstimate - headingTrue;
+fprintf('final position error: %.3f m\n', finalPositionError);
+fprintf('final heading error: %.3f rad\n', finalHeadingError);
 
 
