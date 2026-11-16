@@ -7,7 +7,7 @@ This project involves developing a 2D simulation of a differential-drive robot c
 
 The simulator is being developed in stages, starting with basic robot movement before introducing motor control, waypoint navigation and more realistic operating conditions.
 
-**Developers:** Zhian Borumand, Rubaiyat Mashrafi, Clive Fernandes  
+**Developers:** Zhian Borumand, Rubaiyat Mashrafi
 **Software:** MATLAB R2022b 
 **Status:** Work in Progress
 
@@ -158,4 +158,3 @@ The `main` branch is intended to contain working versions of the project. Indivi
 ## Authors
 - Rubaiyat Mashrafi (https://github.com/rubaiyatmashrafi)
 - Zhian Borumand
-- Clive Fernandes
