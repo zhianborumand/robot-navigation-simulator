@@ -3,6 +3,8 @@ clear;
 clc;
 close all;
 
+addpath('src');             % add path to functions folder
+
 dt = 0.02;
 T = 80;
 time = 0:dt:T;
@@ -36,17 +38,9 @@ for k = 2:length(time)
     trueDistanceLeft(k) = trueDistanceLeft(k-1) + trueSpeedLeft*dt;
     trueDistanceRight(k) = trueDistanceRight(k-1) + trueSpeedRight*dt;
 
-    % ticks a perfect encoder would count this step
-    idealTicksLeft = floor(trueDistanceLeft(k) / distancePerTickLeftActual) - floor(trueDistanceLeft(k-1) / distancePerTickLeftActual);
-    idealTicksRight = floor(trueDistanceRight(k) / distancePerTickRightActual) - floor(trueDistanceRight(k-1) / distancePerTickRightActual);
-
-    % add random error, keep whole numbers, can be negative
-    noisyTicksLeft = idealTicksLeft + round(noiseStd * randn);
-    noisyTicksRight = idealTicksRight + round(noiseStd * randn);
-
-    % running tick counts
-    tickCountLeft(k) = tickCountLeft(k-1) + noisyTicksLeft;
-    tickCountRight(k) = tickCountRight(k-1) + noisyTicksRight;
+    % running tick counts calling encoderModel function
+    tickCountLeft(k) = encoderModel(trueDistanceLeft(k), trueDistanceLeft(k-1), tickCountLeft(k-1), distancePerTickLeftActual, noiseStd);
+    tickCountRight(k) = encoderModel(trueDistanceRight(k), trueDistanceRight(k-1), tickCountRight(k-1), distancePerTickRightActual, noiseStd);
 end
 
 %% starting positions
